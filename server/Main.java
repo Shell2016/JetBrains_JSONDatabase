@@ -1,21 +1,23 @@
 package server;
 
+import com.google.gson.Gson;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Arrays;
-import java.util.List;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class Main {
     public static final String ADDRESS = "127.0.0.1";
     public static final int PORT = 23456;
 
     public static void main(String[] args) {
-        String[] db = new String[1000];
-        Arrays.fill(db, "");
+        Map<String, String> db = new HashMap<>();
         try (ServerSocket server = new ServerSocket(PORT, 50, InetAddress.getByName(ADDRESS))) {
             System.out.println("Server started!");
             while (true) {
@@ -23,44 +25,31 @@ public class Main {
                      DataInputStream input = new DataInputStream(socket.getInputStream());
                      DataOutputStream output = new DataOutputStream(socket.getOutputStream())) {
 
-                    String command = input.readUTF();
-                    List<String> commandList = Arrays.asList(command.split(" "));
-                    String requestType = commandList.get(0);
-                    int cellIndex;
-                    switch (requestType) {
+                    String requestJson = input.readUTF();
+                    Request request = makeRequestFromJson(requestJson);
+                    Map<String, String> response = new LinkedHashMap<>();
+                    switch (request.getType()) {
                         case "exit":
-                            output.writeUTF("OK");
+                            okResponse(response, output);
                             System.exit(0);
                         case "get":
-                            cellIndex = Integer.parseInt(commandList.get(1));
-                            if (cellIndex < 1 || cellIndex > 1000 || db[cellIndex - 1].equals("")) {
-                                output.writeUTF("ERROR");
+                            if (db.get(request.getKey()) == null) {
+                                errorResponse(response, output);
                             } else {
-                                output.writeUTF(db[cellIndex - 1]);
+                                response.put("value", db.get(request.getKey()));
+                                okResponse(response, output);
                             }
                             break;
                         case "delete":
-                            cellIndex = Integer.parseInt(commandList.get(1));
-                            if (cellIndex < 1 || cellIndex > 1000) {
-                                output.writeUTF("ERROR");
+                            if (db.remove(request.getKey()) == null) {
+                                errorResponse(response, output);
                             } else {
-                                db[cellIndex  - 1] = "";
-                                output.writeUTF("OK");
+                                okResponse(response, output);
                             }
                             break;
                         case "set":
-                            cellIndex = Integer.parseInt(commandList.get(1));
-                            if (cellIndex < 1 || cellIndex > 1000) {
-                                output.writeUTF("ERROR");
-                                break;
-                            }
-                            StringBuilder sb = new StringBuilder();
-                            for (String word : commandList.subList(2, commandList.size())) {
-                                sb.append(word);
-                                sb.append(" ");
-                            }
-                            db[cellIndex - 1] = sb.toString().trim();
-                            output.writeUTF("OK");
+                            db.put(request.getKey(), request.getValue());
+                            okResponse(response, output);
                             break;
                     }
 
@@ -72,7 +61,27 @@ public class Main {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
 
+    public static Request makeRequestFromJson(String requestJson) {
+        Gson gson = new Gson();
+        return gson.fromJson(requestJson, Request.class);
+    }
+
+    public static String makeJsonResponse(Map<String, String> response) {
+        Gson gson = new Gson();
+        return gson.toJson(response);
+    }
+
+    public static void okResponse(Map<String, String> response, DataOutputStream output) throws IOException {
+        response.put("response", "OK");
+        output.writeUTF(makeJsonResponse(response));
+    }
+
+    public static void errorResponse(Map<String, String> response, DataOutputStream output) throws IOException {
+        response.put("response", "ERROR");
+        response.put("reason", "No such key");
+        output.writeUTF(makeJsonResponse(response));
     }
 
 }
