@@ -6,9 +6,11 @@ import com.google.gson.Gson;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,6 +18,9 @@ import java.util.Map;
 public class Main {
     public static final String ADDRESS = "127.0.0.1";
     public static final int PORT = 23456;
+
+    @Parameter(names = "-in", description = "File with request")
+    private String fileName;
 
     @Parameter(names = "-t", description = "Type of the request")
     private String requestType;
@@ -41,13 +46,21 @@ public class Main {
              DataOutputStream output = new DataOutputStream(socket.getOutputStream())) {
             System.out.println("Client started!");
             Map<String, String> request = new HashMap<>();
-            request.put("type", requestType);
-            request.put("key", key);
-            if (value != null) {
-                request.put("value", value);
+            String requestJson;
+            if (fileName != null) {
+                String path = "./JSON Database/task/src/client/data/" + fileName;
+                File file = new File(path);
+                requestJson = new String(Files.readAllBytes(file.toPath()));
+            } else {
+                request.put("type", requestType);
+                request.put("key", key);
+                if (value != null) {
+                    request.put("value", value);
+                }
+                Gson gson = new Gson();
+                requestJson = gson.toJson(request);
             }
-            Gson gson = new Gson();
-            String requestJson = gson.toJson(request);
+
             output.writeUTF(requestJson);
             System.out.println("Sent: " + requestJson);
             String msgReceived = input.readUTF();
