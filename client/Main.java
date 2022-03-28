@@ -48,7 +48,9 @@ public class Main {
             Map<String, String> request = new HashMap<>();
             String requestJson;
             if (fileName != null) {
-                String path = "./JSON Database/task/src/client/data/" + fileName;
+                //    короткий адрес для проверки jetbrains, длинный для своего компа
+//                String path = "./JSON Database/task/src/client/data/" + fileName;
+                String path = System.getProperty("user.dir") + "/src/client/data/" + fileName;
                 File file = new File(path);
                 requestJson = new String(Files.readAllBytes(file.toPath()));
             } else {

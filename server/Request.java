@@ -1,9 +1,9 @@
 package server;
 
 public class Request {
-    private String type;
-    private String key;
-    private String value;
+    private final String type;
+    private final String key;
+    private final String value;
 
     public Request(String type, String key, String value) {
         this.type = type;

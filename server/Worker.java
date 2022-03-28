@@ -1,42 +1,28 @@
 package server;
 
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
 
-import static server.Main.*;
+import static server.Main.errorResponse;
+import static server.Main.okResponse;
 
 public class Worker implements Runnable {
-    Socket socket;
     Resource db;
+    DataOutputStream output;
+    Request request;
 
-
-    public Worker(Socket socket, Resource db) {
-        this.socket = socket;
+    public Worker(Resource db, DataOutputStream output, Request request) {
+        this.output = output;
         this.db = db;
+        this.request = request;
     }
 
     @Override
     public void run() {
         try  {
-            DataInputStream input = new DataInputStream(socket.getInputStream());
-            DataOutputStream output = new DataOutputStream(socket.getOutputStream());
-//            try {
-//                Thread.sleep(20000);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
-            String requestJson = input.readUTF();
-            Request request = gson.fromJson(requestJson, Request.class);
             Map<String, String> response = new HashMap<>();
-            if ("exit".equals(request.getType())) {
-                okResponse(response, output);
-                System.exit(0);
-            }
-
             switch (request.getType()) {
                 case "get":
                     Map<String, String> dbMap = db.read();
@@ -56,19 +42,11 @@ public class Worker implements Runnable {
                     break;
                 case "set":
                     db.set(request.getKey(), request.getValue());
-//                    dbMap.put(request.getKey(), request.getValue());
                     okResponse(response, output);
                     break;
             }
-
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            try {
-                socket.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
     }
 }

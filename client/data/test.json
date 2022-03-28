@@ -1,1 +1,1 @@
-{"type":"delete","key":"4"}
+{"type":"set", "key": "1", "value": "one"}
