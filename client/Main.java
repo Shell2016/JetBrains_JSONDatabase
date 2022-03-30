@@ -18,6 +18,9 @@ import java.util.Map;
 public class Main {
     public static final String ADDRESS = "127.0.0.1";
     public static final int PORT = 23456;
+    //    короткий адрес для проверки jetbrains, длинный для своего компа
+    public static final String PATH_DIR = "./JSON Database/task/src/client/data/";
+//    public static final String PATH_DIR = System.getProperty("user.dir") + "/src/client/data/";
 
     @Parameter(names = "-in", description = "File with request")
     private String fileName;
@@ -45,24 +48,8 @@ public class Main {
              DataInputStream input = new DataInputStream(socket.getInputStream());
              DataOutputStream output = new DataOutputStream(socket.getOutputStream())) {
             System.out.println("Client started!");
-            Map<String, String> request = new HashMap<>();
-            String requestJson;
-            if (fileName != null) {
-                //    короткий адрес для проверки jetbrains, длинный для своего компа
-                String path = "./JSON Database/task/src/client/data/" + fileName;
-//                String path = System.getProperty("user.dir") + "/src/client/data/" + fileName;
-                File file = new File(path);
-                requestJson = new String(Files.readAllBytes(file.toPath()));
-            } else {
-                request.put("type", requestType);
-                request.put("key", key);
-                if (value != null) {
-                    request.put("value", value);
-                }
-                Gson gson = new Gson();
-                requestJson = gson.toJson(request);
-            }
 
+            String requestJson = getJson(fileName);
             output.writeUTF(requestJson);
             System.out.println("Sent: " + requestJson);
             String msgReceived = input.readUTF();
@@ -70,6 +57,23 @@ public class Main {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
 
+    private String getJson(String fileName) throws IOException {
+        Map<String, String> request = new HashMap<>();
+        String requestJson;
+        if (fileName != null) {
+            File file = new File(PATH_DIR + fileName);
+            requestJson = new String(Files.readAllBytes(file.toPath()));
+        } else {
+            request.put("type", requestType);
+            request.put("key", key);
+            if (value != null) {
+                request.put("value", value);
+            }
+            Gson gson = new Gson();
+            requestJson = gson.toJson(request);
+        }
+        return requestJson;
     }
 }
