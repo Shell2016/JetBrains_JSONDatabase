@@ -2,11 +2,8 @@ package server;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 
-import static server.Main.errorResponse;
-import static server.Main.okResponse;
 
 public class Worker implements Runnable {
     Resource db;
@@ -22,27 +19,26 @@ public class Worker implements Runnable {
     @Override
     public void run() {
         try  {
-            Map<String, String> response = new HashMap<>();
+            Response response = new Response();
             switch (request.getType()) {
                 case "get":
                     Map<String, String> dbMap = db.read();
                     if (dbMap.get(request.getKey()) == null) {
-                        errorResponse(response, output);
+                        response.errorResponse(output);
                     } else {
-                        response.put("value", dbMap.get(request.getKey()));
-                        okResponse(response, output);
+                        response.getResponse(output, dbMap.get(request.getKey()));
                     }
                     break;
                 case "delete":
                     if (db.delete(request.getKey()) == null) {
-                        errorResponse(response, output);
+                        response.errorResponse(output);
                     } else {
-                        okResponse(response, output);
+                        response.okResponse(output);
                     }
                     break;
                 case "set":
                     db.set(request.getKey(), request.getValue());
-                    okResponse(response, output);
+                    response.okResponse(output);
                     break;
             }
         } catch (IOException e) {

@@ -1,5 +1,6 @@
 package server;
 
+import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 import java.io.File;
@@ -10,8 +11,6 @@ import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import static server.Main.gson;
 
 public class Resource {
     private final ReentrantReadWriteLock rwl;
@@ -32,7 +31,9 @@ public class Resource {
                 e.printStackTrace();
             }
             Type type = new TypeToken<HashMap<String, String>>(){}.getType();
-            dbMap = gson.fromJson(dbJson, type);
+            dbMap = new Gson().fromJson(dbJson, type);
+            if (dbMap == null)
+                return new HashMap<>();
         } finally {
             rwl.readLock().unlock();
         }
@@ -41,22 +42,13 @@ public class Resource {
 
     public void set(String key, String value) {
         File dbFile = new File(Main.DB_PATH);
-        String dbJson = "";
+        String dbJson;
         Map<String, String> dbMap;
         rwl.writeLock().lock();
         try {
-            try {
-                dbJson = new String(Files.readAllBytes(dbFile.toPath()));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            Type type = new TypeToken<HashMap<String, String>>(){}.getType();
-            dbMap = gson.fromJson(dbJson, type);
-            if (dbMap == null) {
-                dbMap = new HashMap<>();
-            }
+            dbMap = getMap(dbFile);
             dbMap.put(key, value);
-            dbJson = gson.toJson(dbMap);
+            dbJson = new Gson().toJson(dbMap);
             try (FileWriter writer = new FileWriter(dbFile)) {
                 writer.write(dbJson);
             } catch (IOException e) {
@@ -69,25 +61,16 @@ public class Resource {
 
     public String delete(String key) {
         File dbFile = new File(Main.DB_PATH);
-        String dbJson = "";
+        String dbJson;
         Map<String, String> dbMap;
         rwl.writeLock().lock();
         try {
-            try {
-                dbJson = new String(Files.readAllBytes(dbFile.toPath()));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            Type type = new TypeToken<HashMap<String, String>>(){}.getType();
-            dbMap = gson.fromJson(dbJson, type);
-            if (dbMap == null) {
-                dbMap = new HashMap<>();
-            }
+            dbMap = getMap(dbFile);
             String result = dbMap.remove(key);
             if (result == null) {
                 return null;
             } else {
-                dbJson = gson.toJson(dbMap);
+                dbJson = new Gson().toJson(dbMap);
                 try (FileWriter writer = new FileWriter(dbFile)) {
                     writer.write(dbJson);
                 } catch (IOException e) {
@@ -98,6 +81,23 @@ public class Resource {
         } finally {
             rwl.writeLock().unlock();
         }
+    }
+
+    private Map<String, String> getMap(File dbFile) {
+        Gson gson = new Gson();
+        Map<String, String> dbMap;
+        String dbJson = "";
+        try {
+            dbJson = new String(Files.readAllBytes(dbFile.toPath()));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        Type type = new TypeToken<HashMap<String, String>>(){}.getType();
+        dbMap = gson.fromJson(dbJson, type);
+        if (dbMap == null) {
+            dbMap = new HashMap<>();
+        }
+        return dbMap;
     }
 
 

@@ -49,8 +49,8 @@ public class Main {
             String requestJson;
             if (fileName != null) {
                 //    короткий адрес для проверки jetbrains, длинный для своего компа
-//                String path = "./JSON Database/task/src/client/data/" + fileName;
-                String path = System.getProperty("user.dir") + "/src/client/data/" + fileName;
+                String path = "./JSON Database/task/src/client/data/" + fileName;
+//                String path = System.getProperty("user.dir") + "/src/client/data/" + fileName;
                 File file = new File(path);
                 requestJson = new String(Files.readAllBytes(file.toPath()));
             } else {
